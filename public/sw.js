@@ -6,7 +6,7 @@
    server is reachable and falls back to the cache when it is not. Race-data
    requests are never cached. */
 
-const CACHE = 'bibscan-web-v1';
+const CACHE = 'bibscan-web-v2';
 
 const FILES = [
   './',
@@ -28,6 +28,9 @@ const FILES = [
   'js/core/format.js',
   'js/core/index.js',
   'js/core/matching.js',
+  'js/core/races.js',
+  'js/core/relay.js',
+  'js/core/runsignup.js',
   'js/core/settings.js',
   'js/core/sync.js',
   'js/core/tracker.js',

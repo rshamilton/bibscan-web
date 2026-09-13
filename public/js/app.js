@@ -3,7 +3,8 @@
    Everything runs here, on this device: the recognition engine in a worker,
    the roster and history in IndexedDB, voting in the engine. The only thing
    that ever leaves the browser is a race-data request, through the local
-   server's relay, when you add or sync an Athlinks race.
+   server's relay, when you add or sync a race from Athlinks/ChronoTrack or
+   RunSignUp (see core/races.js for how a pasted link picks one).
 
    Layout is mobile-first. The live page itself never scrolls; the camera and
    the names are panes inside a fixed frame, and only the names pane scrolls.
@@ -11,6 +12,7 @@
 
 import { MemoryBackend, RaceIndex } from './core/index.js';
 import { ReigniteClient, proxyFetcher } from './core/athlinks.js';
+import { RunSignUpClient } from './core/runsignup.js';
 import { LiveUpdater, Syncer } from './core/sync.js';
 import { build, validate } from './core/settings.js';
 import { esc, localDate, raceState } from './core/format.js';
@@ -32,8 +34,12 @@ Object.assign(ctx, {
   storageError: null,
   info: null,
   // Empty when served by server.mjs (same-origin /proxy/); the Pages deploy
-  // fills in the Cloudflare Worker's URL.
-  client: new ReigniteClient({ fetcher: proxyFetcher(document.querySelector('meta[name="bibscan-relay"]')?.content.replace(/\/+$/, '') || '') }),
+  // fills in the Cloudflare Worker's URL. One relay base, one client per
+  // timing service, keyed by the race 'kind' that resolveAnyRace() returns.
+  clients: (() => {
+    const fetcher = proxyFetcher(document.querySelector('meta[name="bibscan-relay"]')?.content.replace(/\/+$/, '') || '');
+    return { athlinks: new ReigniteClient({ fetcher }), runsignup: new RunSignUpClient({ fetcher }) };
+  })(),
   engine: new EngineClient(),
   cfg: build(),
   saved: {},
@@ -107,7 +113,7 @@ Object.assign(ctx, {
   },
 });
 
-ctx.syncer = new Syncer(null, ctx.client);
+ctx.syncer = new Syncer(null, ctx.clients);
 ctx.live = new LiveUpdater(ctx.syncer);
 
 /* ============================================================== live view */

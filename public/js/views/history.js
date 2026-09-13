@@ -2,6 +2,7 @@
 
 import { historyCsv } from '../core/csv.js';
 import { esc } from '../core/format.js';
+import { SYNCABLE_KINDS } from '../core/races.js';
 import { refreshBib } from '../core/sync.js';
 import { $, download, slug, when } from '../ui.js';
 
@@ -12,7 +13,7 @@ export function mountHistory(ctx) {
 
   async function load() {
     const race = ctx.race;
-    $('askTimerRow').hidden = !(race && race.kind === 'athlinks');
+    $('askTimerRow').hidden = !(race && SYNCABLE_KINDS.has(race.kind));
     if (!race) {
       rows = [];
       $('histSub').textContent = 'No race selected';
@@ -85,9 +86,9 @@ export function mountHistory(ctx) {
     out.innerHTML = '<div class="muted gap">Looking…</div>';
     let runners = await ctx.index.lookup(race.event_id, bib);
     let source = 'lookup', warning = '';
-    if (race.kind === 'athlinks' && ($('askTimer').checked || !runners.length)) {
+    if (SYNCABLE_KINDS.has(race.kind) && ($('askTimer').checked || !runners.length)) {
       try {
-        const fresh = await refreshBib(ctx.index, ctx.client, race.event_id, bib);
+        const fresh = await refreshBib(ctx.index, ctx.clients[race.kind], race.event_id, bib);
         if (fresh.length) runners = fresh;
         source = 'lookup (live)';
         await ctx.reloadRace();

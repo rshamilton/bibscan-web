@@ -18,6 +18,13 @@ test('relays an allowed host with CORS for an allowed origin', async () => {
   assert.equal(await r.text(), '{"a":1}');
 });
 
+test('RunSignUp is relayed too, on both the api and the site host', async () => {
+  for (const host of ['api.runsignup.com', 'runsignup.com']) {
+    const r = await handle(req(`/proxy/${host}/anything`), env, ok);
+    assert.equal(r.status, 200, host);
+  }
+});
+
 test('no CORS grant for other origins', async () => {
   const r = await handle(req('/proxy/sites.chronotrack.com/r/1', { headers: { Origin: 'https://evil.example' } }), env, ok);
   assert.equal(r.headers.get('Access-Control-Allow-Origin'), null);

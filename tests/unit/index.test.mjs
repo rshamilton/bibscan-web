@@ -181,7 +181,7 @@ test('asking the timer about one bib folds the answer in', async () => {
 
 test('one sync at a time, and failures are reported rather than thrown', async () => {
   const index = await fresh();
-  const syncer = new Syncer(index, fakeClient({ fail: 'HTTP 403' }));
+  const syncer = new Syncer(index, { athlinks: fakeClient({ fail: 'HTTP 403' }) });
   assert.equal(syncer.start({ eventId: 1146036 }), true);
   assert.equal(syncer.start({ eventId: 1146036 }), false);
   await syncer.promise;

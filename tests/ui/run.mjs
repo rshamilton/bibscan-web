@@ -9,7 +9,7 @@
 // working offline with the server stopped.
 //
 //   npm run test:ui                 everything
-//   NETWORK=0 npm run test:ui       skip the one check that reaches Athlinks
+//   NETWORK=0 npm run test:ui       skip the checks that reach Athlinks/RunSignUp
 //   OUT=dir npm run test:ui         where screenshots go (default tests/ui/shots)
 //
 // Firefox rather than Chromium: Chromium on a Raspberry Pi silently never
@@ -364,6 +364,20 @@ try {
     const net = await page.eval(`({ sync: bibscan.syncer.state, race: bibscan.race.name, total: bibscan.counts.total, finished: bibscan.counts.finished, msg: document.getElementById('syncMsg').textContent })`);
     check('its roster and results sync into the browser', synced && !net.sync.error && net.total > 100 && net.finished > 100 && /Hartford/.test(net.race), `${net.total} runners, ${net.finished} finished; ${net.msg}${net.sync.error ? ` ERROR ${net.sync.error}` : ''}`);
     await shot(page, 'phone-setup-network');
+
+    // A real, currently-live RunSignUp race (sold out, runs 2026-09-26): proves
+    // the second provider resolves over the real relay too, and that it is
+    // honest about having no anonymous roster (0 entrants, not an error).
+    await page.eval(`(() => { document.getElementById('spec').value = 'https://runsignup.com/Race/PA/Philadelphia/Gritty5K'; document.getElementById('addForm').requestSubmit(); })()`);
+    const rsuAdded = await page.waitFor(`/Added/.test(document.getElementById('addMsg').textContent) || /note bad/.test(document.getElementById('addMsg').className)`, 60000, 500);
+    const rsuAddMsg = await page.eval(`document.getElementById('addMsg').textContent`);
+    check('pasting a RunSignUp link adds the race through the real API, no key needed', rsuAdded && /GRITTY/i.test(rsuAddMsg), rsuAddMsg);
+    const rsuSynced = await page.waitFor(`!bibscan.syncer.state.running && bibscan.syncer.state.finished_at > 0`, 60000, 500);
+    // entrants stays 0 structurally (RunSignUp never contributes an anonymous
+    // roster - see runsignup.js), regardless of whether this edition has run
+    // and posted results yet, so this holds however long from now it's run.
+    const rsu = await page.eval(`({ sync: bibscan.syncer.state, race: bibscan.race.kind, entBtn: document.getElementById('syncEntBtn').disabled, entrants: bibscan.counts.entrants })`);
+    check('RunSignUp results sync with no error even though it has no anonymous roster', rsuSynced && !rsu.sync.error && rsu.race === 'runsignup' && rsu.entBtn && rsu.entrants === 0, JSON.stringify(rsu));
     await page.eval(select('raceSelect', '-1'));
   }
 
@@ -385,7 +399,7 @@ try {
     const reg = await navigator.serviceWorker.ready;
     for (let i = 0; i < 240 && reg.active.state !== 'activated'; i++) await new Promise((r) => setTimeout(r, 250));
     for (let i = 0; i < 120; i++) {
-      const keys = (await (await caches.open('bibscan-web-v1')).keys()).map((r) => new URL(r.url).pathname);
+      const keys = (await (await caches.open('bibscan-web-v2')).keys()).map((r) => new URL(r.url).pathname);
       if (['/models/rec.onnx', '/vendor/ort/ort-wasm-simd-threaded.wasm', '/js/app.js'].every((k) => keys.includes(k))) return { files: keys.length, state: reg.active.state };
       await new Promise((r) => setTimeout(r, 500));
     }

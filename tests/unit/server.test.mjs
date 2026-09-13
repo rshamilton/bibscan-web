@@ -57,7 +57,10 @@ const upstream = await listen((req, res) => {
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end('{"message":"nope"}');
 });
-const hosts = { 'reignite-api.athlinks.com': upstream.url, 'sites.chronotrack.com': upstream.url };
+const hosts = {
+  'reignite-api.athlinks.com': upstream.url, 'sites.chronotrack.com': upstream.url,
+  'api.runsignup.com': upstream.url, 'runsignup.com': upstream.url,
+};
 const app = await listen(createHandler({ publicDir: site, upstream: hosts, info: { lan: false } }));
 test.after(async () => { await app.close(); await upstream.close(); });
 
@@ -120,6 +123,14 @@ test('relay reaches ChronoTrack pages too', async () => {
   const r = await get(`${app.url}/proxy/sites.chronotrack.com/event/1/results`);
   assert.equal(r.status, 200);
   assert.equal(r.body, '<html>ct</html>');
+});
+
+test('relay reaches RunSignUp too, on both the api and the site host', async () => {
+  for (const host of ['api.runsignup.com', 'runsignup.com']) {
+    const r = await get(`${app.url}/proxy/${host}/anything`);
+    assert.equal(r.headers['x-bibscan-proxy'], '1');
+    assert.notEqual(r.status, 403, host); // allowed to relay, even though this path 404s upstream
+  }
 });
 
 test('relay keeps upstream status codes (404 means "no such thing")', async () => {

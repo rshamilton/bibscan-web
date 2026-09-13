@@ -16,4 +16,16 @@ export const PROXY_HOSTS = {
     'User-Agent': BROWSER_UA,
     Accept: 'text/html,application/xhtml+xml',
   },
+  // RunSignUp's public REST API - documented, no key needed, CORS-open on
+  // its own (checked live), but still relayed for one consistent egress path.
+  'api.runsignup.com': {
+    'User-Agent': BROWSER_UA,
+    Accept: 'application/json',
+  },
+  // Only for scraping a race's own page for its numeric id (see
+  // resolveRunSignUpRace in runsignup.js) when a pasted link doesn't carry one.
+  'runsignup.com': {
+    'User-Agent': BROWSER_UA,
+    Accept: 'text/html,application/xhtml+xml',
+  },
 };

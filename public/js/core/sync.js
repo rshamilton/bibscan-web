@@ -79,12 +79,14 @@ export async function refreshBib(index, client, eventId, bib) {
   return index.lookup(eventId, bib);
 }
 
-/* One background sync at a time, with a status the UI can render. */
+/* One background sync at a time, with a status the UI can render. `clients`
+   maps a race's `kind` (e.g. 'athlinks', 'runsignup') to the client that
+   knows how to talk to that timing service. */
 export class Syncer extends EventTarget {
-  constructor(index, client) {
+  constructor(index, clients) {
     super();
     this.index = index;
-    this.client = client;
+    this.clients = clients;
     this.state = { running: false, stage: '', detail: '', error: null, event_id: null, race_name: '', finished_at: 0 };
     this.promise = null;
   }
@@ -108,8 +110,10 @@ export class Syncer extends EventTarget {
     try {
       const race = await this.index.race(eventId);
       this.set({ race_name: race ? race.name : '' });
-      if (entrants) await syncEntrants(this.index, this.client, eventId, progress('entrants'));
-      if (results) await syncResults(this.index, this.client, eventId, progress('results'));
+      const client = race && this.clients[race.kind];
+      if (!client) throw new Error(race ? `no timing-service client for '${race.kind}' races` : 'race not found');
+      if (entrants) await syncEntrants(this.index, client, eventId, progress('entrants'));
+      if (results) await syncResults(this.index, client, eventId, progress('results'));
       this.set({ stage: 'done', detail: '' });
     } catch (exc) {
       this.set({ stage: 'failed', error: exc.message || String(exc) });

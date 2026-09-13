@@ -41,9 +41,13 @@ camera's would be.
 ## At a race
 
 1. **Setup → Add a race.** Paste the results link from the race's website
-   (ChronoTrack or Athlinks), or an Athlinks event id. It switches to the race
-   and pulls the entrant roster straight away — before the gun, so runners are
-   named the moment their bib is read, with "on course" where the time will go.
+   (ChronoTrack, Athlinks or RunSignUp), or an Athlinks event id. For
+   ChronoTrack and Athlinks races this switches to the race and pulls the
+   entrant roster straight away — before the gun, so runners are named the
+   moment their bib is read, with "on course" where the time will go.
+   RunSignUp doesn't publish an entrant roster for anyone to read anonymously
+   (only results, once a timer posts them), so a RunSignUp runner is named
+   the moment they finish rather than before the start.
 2. **Keep results fresh** (Setup) pulls new finishers every 60 seconds while the
    page is open, so "on course" turns into a finish time.
 3. **Live → Start.** Your laptop's webcam, a USB camera, a phone, or a video
@@ -175,10 +179,13 @@ stays within 8px for 6 seconds is scenery.
 The race-data API behind Athlinks sits behind CloudFront, which answers a
 browser calling it from any other site with HTTP 403 (measured: `Origin:
 http://localhost` → 403, `Origin: https://www.athlinks.com` → 200). So the page
-cannot fetch rosters itself. `server.mjs` relays those requests, and nothing
-else:
+cannot fetch rosters itself. RunSignUp's API has no such block (it answers
+any origin), but requests still go through the same relay rather than being
+fetched directly, so there is one audited egress path instead of two.
+`server.mjs` relays those requests, and nothing else:
 
-* only `reignite-api.athlinks.com` and `sites.chronotrack.com`, GET only;
+* only `reignite-api.athlinks.com`, `sites.chronotrack.com`,
+  `api.runsignup.com` and `runsignup.com`, GET only;
 * redirects are refused, `..` in any form is refused, the target is re-checked
   after parsing, responses are size-capped and time-limited;
 * it listens on `127.0.0.1` unless you pass `--lan`;
@@ -223,7 +230,7 @@ about half the Python speed on the same CPU; the models load in about 1.4 s.
 npm install          # dev only: the same onnxruntime-web release, for Node
 npm test             # unit tests: matching, voting, index, sync, CSV, settings, relay, app files
 npm run test:ocr     # the real models in Node, compared with bibscan and OpenCV
-npm run test:ui      # the whole app in headless Firefox (NETWORK=0 skips Athlinks)
+npm run test:ui      # the whole app in headless Firefox (NETWORK=0 skips Athlinks/RunSignUp)
 ```
 
 TESTING_PLACEHOLDER
@@ -265,7 +272,7 @@ public/
   js/engine.worker.js   loads the models, runs frames
   js/synth.js           demo camera and self-test imagery
   js/store-idb.js       IndexedDB storage
-  js/core/              matching, tracker, index, sync, athlinks, csv, settings, demo
+  js/core/              matching, tracker, index, sync, races, athlinks, runsignup, relay, csv, settings, demo
   js/ocr/               reader, scanner, image ops, detector post-processing, CTC
   models/               PP-OCR det / cls / rec (ONNX) and the character list
   vendor/ort/           onnxruntime-web 1.29.0
@@ -283,6 +290,13 @@ tools/make_fixtures.py  regenerates the parity fixtures from bibscan
   a Raspberry Pi 5 (above). A phone runs the scanner on its own CPU.
 * The Athlinks endpoints are not a documented public API and can change without
   notice. CSV import is the fallback.
+* RunSignUp's API is public and documented, but doesn't allow anonymous access
+  to a race's entrant roster (only results) — see "At a race" above.
+* The strict Content-Security-Policy and cross-origin-isolation headers
+  described above come from `server.mjs`. A statically-hosted copy (GitHub
+  Pages, say) can't send custom headers, so it runs without either — still
+  correct, just without that particular hardening and without multi-threaded
+  inference.
 * Tested here in Firefox (desktop and phone-sized viewports, headless). The
   code avoids anything Safari lacks, but it was not run on a physical iPhone.
 
@@ -290,4 +304,7 @@ tools/make_fixtures.py  regenerates the parity fixtures from bibscan
 
 MIT — see [LICENSE](LICENSE). The PP-OCR models are Apache-2.0 and ONNX Runtime
 Web is MIT; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Race results
-come from public endpoints, for personal use.
+come from public endpoints, for personal use. See
+[Terms of use](public/legal/terms.md) and [Privacy](public/legal/privacy.md)
+for the rest — in short, nothing but the race-data request you trigger ever
+leaves your device.

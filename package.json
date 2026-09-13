@@ -1,6 +1,6 @@
 {
   "name": "bibscan-web",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Race bib scanner that runs entirely in your browser: point a camera at runners, read their bib numbers, and show who they are.",
   "type": "module",
   "private": true,

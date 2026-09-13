@@ -59,5 +59,8 @@ CLAHE, 8-bit Lab). The test suite compares them against OpenCV's own output.
 
 ## Race data
 
-Race rosters and results come from Athlinks' public results endpoints, fetched
-on your request through the local server. They are not part of this software.
+Race rosters and results come from Athlinks' and RunSignUp's public results
+endpoints, fetched on your request through the local server. They are not
+part of this software. Athlinks, ChronoTrack and RunSignUp are trademarks of
+their respective owners; bibscan-web is an independent, unaffiliated project
+and is not sponsored by or endorsed by any of them.

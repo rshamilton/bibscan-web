@@ -1,10 +1,11 @@
 /* Setup: races, rosters without the internet, settings, the engine and its
    self-test, the phone link, and your data. */
 
-import { AmbiguousRace, resolveRace } from '../core/athlinks.js';
+import { AmbiguousRace } from '../core/athlinks.js';
 import { rosterFromCsv } from '../core/csv.js';
 import { DEMO_EVENT_ID, demoRace, demoRunners } from '../core/demo.js';
 import { esc, localDate } from '../core/format.js';
+import { nativeRaceId, PROVIDER_LABELS, resolveAnyRace, SYNCABLE_KINDS } from '../core/races.js';
 import { describe } from '../core/settings.js';
 import { background, mulberry32, randomParams, synthFrame } from '../synth.js';
 import { $, download, note } from '../ui.js';
@@ -31,8 +32,8 @@ export function mountSetup(ctx) {
     btn.textContent = 'Adding…';
     note('addMsg', 'Looking up the race…');
     try {
-      const { info, sourceUrl } = await resolveRace(spec, ctx.client);
-      await ctx.index.addRace(info, { sourceUrl, activate: true, kind: 'athlinks' });
+      const { info, sourceUrl, kind } = await resolveAnyRace(spec, ctx.clients);
+      await ctx.index.addRace(info, { sourceUrl, activate: true, kind });
       await ctx.setActiveRace(info.event_id);
       keepData();
       const syncing = ctx.syncer.start({ eventId: info.event_id });
@@ -116,7 +117,8 @@ export function mountSetup(ctx) {
     } else {
       const counts = await Promise.all(races.map((r) => ctx.index.counts(r.event_id)));
       box.innerHTML = races.map((r, i) => {
-        const kind = r.kind === 'csv' ? 'imported from CSV' : r.kind === 'demo' ? 'demo race' : `Athlinks id ${r.event_id}`;
+        const kind = r.kind === 'csv' ? 'imported from CSV' : r.kind === 'demo' ? 'demo race'
+          : PROVIDER_LABELS[r.kind] ? `${PROVIDER_LABELS[r.kind]} id ${nativeRaceId(r)}` : `id ${r.event_id}`;
         return `<div class="race" data-race="${r.event_id}"><div class="race-top"><b>${esc(r.name)}</b>${r.active ? '<span class="pill live">active</span>' : ''}</div>` +
           `<div class="muted">${esc(r.start_epoch ? localDate(r.start_epoch) : 'no date')} · ${esc(r.state)} · ${counts[i].total} runners, ${counts[i].finished} finished</div>` +
           `<div class="muted">${(r.courses || []).map((c) => esc(c.name)).join(', ') || 'no courses'} · ${esc(kind)}</div>` +
@@ -146,10 +148,15 @@ export function mountSetup(ctx) {
   }
 
   function updateSyncButtons() {
-    const athlinks = !!(ctx.race && ctx.race.kind === 'athlinks');
-    $('syncBtn').disabled = $('syncEntBtn').disabled = !athlinks || ctx.syncer.state.running;
-    $('liveToggle').disabled = !athlinks;
-    if (ctx.live.running && (!athlinks || ctx.live.eventId !== ctx.race.event_id)) ctx.live.stop();
+    const syncable = !!(ctx.race && SYNCABLE_KINDS.has(ctx.race.kind));
+    const noRoster = !!(ctx.race && ctx.race.kind === 'runsignup');
+    $('syncBtn').disabled = !syncable || ctx.syncer.state.running;
+    $('syncEntBtn').disabled = !syncable || ctx.syncer.state.running || noRoster;
+    // A title tooltip alone would never be seen on a phone, so say it plainly.
+    $('syncNote').textContent = noRoster
+      ? 'RunSignUp does not publish an entrant roster before the race. "Sync roster now" still pulls results as they post.' : '';
+    $('liveToggle').disabled = !syncable;
+    if (ctx.live.running && (!syncable || ctx.live.eventId !== ctx.race.event_id)) ctx.live.stop();
     $('liveToggle').checked = ctx.live.running;
   }
 
@@ -353,7 +360,7 @@ export function mountSetup(ctx) {
     const box = $('netInfo');
     const info = ctx.info;
     if (!info) {
-      box.innerHTML = 'This page is not being served by the bibscan-web server, so adding Athlinks races is unavailable. Demo runners and CSV rosters still work.';
+      box.innerHTML = 'This page is not being served by the bibscan-web server, so adding an Athlinks or RunSignUp race is unavailable. Demo runners and CSV rosters still work.';
       return;
     }
     const copyNote = ' A phone keeps its own races and history, so add the race there too — or export a backup here and import it on the phone.';

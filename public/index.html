@@ -135,13 +135,15 @@
     <div class="panel">
       <h2>Add a race</h2>
       <form id="addForm" class="row">
-        <input type="text" id="spec" class="grow" autocomplete="off" placeholder="ChronoTrack or Athlinks results link, or an event id" aria-label="Race link or event id">
+        <input type="text" id="spec" class="grow" autocomplete="off" placeholder="ChronoTrack, Athlinks or RunSignUp results link, or an event id" aria-label="Race link or event id">
         <button type="submit" class="primary" id="addBtn">Add</button>
       </form>
       <div class="muted gap">
         Paste the results link from the race's own website. A bare number is treated as an
-        Athlinks event id; use <code>series:12345</code> for a recurring race. Adding a race
-        switches to it and pulls its roster straight away.
+        Athlinks event id; use <code>series:12345</code> for a recurring race, or
+        <code>runsignup:12345</code> for a RunSignUp one. Adding a race switches to it and pulls
+        its roster straight away — except on RunSignUp, which doesn't publish one before the
+        race; runners there are named as results are posted instead.
       </div>
       <div id="addMsg"></div>
     </div>
@@ -170,6 +172,7 @@
         <button type="button" id="syncEntBtn">Entrants only</button>
         <span class="muted" id="syncMsg"></span>
       </div>
+      <div class="muted" id="syncNote"></div>
       <label class="check gap"><input type="checkbox" id="liveToggle"> Keep results fresh while this page is open</label>
       <div class="muted" id="liveMsg"></div>
     </div>
@@ -224,7 +227,11 @@
 
     <div class="panel about muted">
       bibscan-web · OCR by PP-OCR models (Apache-2.0) on ONNX Runtime Web (MIT). Race data comes
-      from Athlinks' public results endpoints, relayed by your own local server.
+      from Athlinks' and RunSignUp's public results endpoints, relayed by your own local server.
+      Athlinks, ChronoTrack and RunSignUp are trademarks of their respective owners; bibscan-web
+      is not affiliated with or endorsed by any of them.
+      <div class="gap"><a href="legal/terms.md" target="_blank" rel="noopener">Terms of use</a> ·
+        <a href="legal/privacy.md" target="_blank" rel="noopener">Privacy</a></div>
     </div>
   </main>
 </section>

@@ -6,6 +6,9 @@
    /proxy route, which is pinned to these hosts and adds the headers. */
 
 import { localDate } from './format.js';
+import { NoProxyError, proxyFetcher } from './relay.js';
+
+export { NoProxyError, proxyFetcher };
 
 export const REIGNITE_HOST = 'reignite-api.athlinks.com';
 export const CHRONOTRACK_HOST = 'sites.chronotrack.com';
@@ -17,12 +20,6 @@ const ATHLINKS_SIMPLE_RE = /athlinks\.com\/event\/(\d+)/;
 const CHRONOTRACK_RE = /chronotrack\.com\/(?:event|r)\/(\d+)/;
 
 export class ResolveError extends Error {}
-
-export class NoProxyError extends Error {
-  constructor() {
-    super('Race lookups need the bibscan-web server: start it with `node server.mjs` and open the page it prints.');
-  }
-}
 
 /* A bare number that is valid as both an event and a race series. Athlinks
    event ids and series ids share a number space, so guessing would quietly add
@@ -44,16 +41,6 @@ export class AmbiguousRace extends ResolveError {
     this.masterName = masterName;
     this.editions = editions;
   }
-}
-
-/* The fetcher used in the browser: GET /proxy/<host><path>?<query>. */
-export function proxyFetcher(base = '') {
-  return async (host, path, params) => {
-    const qs = params && Object.keys(params).length ? `?${new URLSearchParams(params)}` : '';
-    const r = await fetch(`${base}/proxy/${host}${path}${qs}`, { cache: 'no-store' });
-    if (!r.headers.get('X-Bibscan-Proxy')) throw new NoProxyError();
-    return { status: r.status, body: await r.text() };
-  };
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
