@@ -292,11 +292,14 @@ tools/make_fixtures.py  regenerates the parity fixtures from bibscan
   notice. CSV import is the fallback.
 * RunSignUp's API is public and documented, but doesn't allow anonymous access
   to a race's entrant roster (only results) — see "At a race" above.
-* The strict Content-Security-Policy and cross-origin-isolation headers
-  described above come from `server.mjs`. A statically-hosted copy (GitHub
-  Pages, say) can't send custom headers, so it runs without either — still
-  correct, just without that particular hardening and without multi-threaded
-  inference.
+* The strict Content-Security-Policy described above is enforced everywhere —
+  as a response header from `server.mjs`, or as a `<meta>` tag in the page on
+  a statically-hosted copy (GitHub Pages, say), since static hosts can't send
+  custom headers. The one gap is `frame-ancestors`, which browsers only honor
+  as a header, so a statically-hosted copy can be framed by another site. The
+  cross-origin-isolation headers (COOP/COEP) have no `<meta>` equivalent at
+  all, so a static copy also runs single-threaded, without that particular
+  hardening.
 * Tested here in Firefox (desktop and phone-sized viewports, headless). The
   code avoids anything Safari lacks, but it was not run on a physical iPhone.
 
