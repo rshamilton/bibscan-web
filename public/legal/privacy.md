@@ -49,14 +49,16 @@ No third parties in the page
 ------------------------------
 
 The app itself contains no analytics, no advertising, and no third-party
-embeds or tracking cookies of any kind — you can read every line of it. When
-you run it with `node server.mjs` (or an equivalent host that forwards its
-response headers), the page also arrives with a strict
-Content-Security-Policy restricting it to its own origin; you can read the
+embeds or tracking cookies of any kind — you can read every line of it. The
+page carries a strict Content-Security-Policy restricting it to its own
+origin (plus the relay, for race-data requests); when you run it with
+`node server.mjs` (or an equivalent host that forwards its response
+headers) that policy arrives as a response header, and you can read the
 exact policy in `server.mjs`. A statically-hosted copy (for example, on
-GitHub Pages) can't carry that same header — static hosts don't send custom
-headers — so that particular protection is specific to running your own
-server.
+GitHub Pages) carries the same policy as a `<meta>` tag in the page instead,
+since static hosts can't send custom headers — with one exception:
+`frame-ancestors`, which browsers only honor as a header, so a statically-hosted
+copy can be framed by another site in a way a self-hosted one cannot.
 
 Your choices
 ------------

@@ -23,7 +23,10 @@ jobs:
         if: vars.RELAY_URL != ''
         env:
           RELAY_URL: ${{ vars.RELAY_URL }}
-        run: sed -i "s|<meta name=\"bibscan-relay\" content=\"\">|<meta name=\"bibscan-relay\" content=\"${RELAY_URL}\">|" public/index.html
+        run: |
+          ORIGIN="${RELAY_URL%/}"
+          sed -i "s|<meta name=\"bibscan-relay\" content=\"\">|<meta name=\"bibscan-relay\" content=\"${RELAY_URL}\">|" public/index.html
+          sed -i "s|__RELAY_ORIGIN__|${ORIGIN}|" public/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
