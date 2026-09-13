@@ -1,0 +1,9 @@
+node_modules/
+data/
+tests/ui/shots/
+
+# TLS certs/keys and any other stray secrets - never commit these
+*.crt
+*.key
+*.pem
+.env

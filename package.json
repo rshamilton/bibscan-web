@@ -1,0 +1,23 @@
+{
+  "name": "bibscan-web",
+  "version": "1.0.0",
+  "description": "Race bib scanner that runs entirely in your browser: point a camera at runners, read their bib numbers, and show who they are.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "lan": "node server.mjs --lan",
+    "test": "node --test \"tests/unit/*.test.mjs\"",
+    "test:ocr": "node --test --test-timeout=600000 \"tests/ocr/*.test.mjs\"",
+    "test:ui": "node tests/ui/run.mjs",
+    "test:all": "npm test && npm run test:ocr && npm run test:ui",
+    "bench": "node tools/bench.mjs"
+  },
+  "devDependencies": {
+    "onnxruntime-web": "1.29.0"
+  }
+}

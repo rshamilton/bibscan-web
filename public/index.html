@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Point a camera at runners, read their race bibs, and show who they are. Runs entirely in your browser.">
+<title>bibscan</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<div id="app" class="mode-split">
+
+  <header class="bar">
+    <button type="button" id="menuBtn" class="iconbtn" aria-label="Race and camera controls" aria-expanded="false" aria-controls="drawer">&#9776;</button>
+    <div class="titles">
+      <div id="raceTitle" class="title">bibscan</div>
+      <div id="raceSub" class="sub">starting…</div>
+    </div>
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" data-mode="split" aria-pressed="true">Both</button>
+      <button type="button" data-mode="names" aria-pressed="false">Names</button>
+      <button type="button" data-mode="camera" aria-pressed="false">Camera</button>
+    </div>
+    <span id="connDot" class="dot" role="status" aria-label="starting"></span>
+
+    <section id="drawer" class="drawer" hidden>
+      <div class="stats">
+        <div><b id="statRunners">–</b><span>runners</span></div>
+        <div><b id="statFinished">–</b><span>finished</span></div>
+        <div><b id="statSeen">0</b><span>seen</span></div>
+        <div><b id="statState">–</b><span>race</span></div>
+      </div>
+
+      <label class="field" for="raceSelect"><span>Race</span>
+        <select id="raceSelect"><option value="">Loading races…</option></select>
+      </label>
+
+      <label class="field" for="camSelect"><span>Camera</span>
+        <select id="camSelect"><option value="demo">Demo runners (no camera needed)</option></select>
+        <button type="button" id="flipBtn" class="iconbtn" aria-label="Switch to the next camera" hidden>&#8635;</button>
+      </label>
+      <div id="videoRow" class="field" hidden><span>Video</span>
+        <label class="btnfile" for="videoFile">Choose a video…</label>
+        <input type="file" id="videoFile" accept="video/*" class="visually-hidden">
+        <span id="videoName" class="muted ellipsis"></span>
+      </div>
+      <div id="insecureNote" class="note bad" hidden></div>
+
+      <div class="field"><span>Camera size</span>
+        <div class="sizes">
+          <button type="button" data-size="30">Small</button>
+          <button type="button" data-size="48">Medium</button>
+          <button type="button" data-size="70">Large</button>
+        </div>
+      </div>
+
+      <div id="engineLine" class="muted engineline">Engine: starting…</div>
+
+      <div class="links">
+        <a href="#/history">History</a>
+        <a href="#/setup">Setup</a>
+      </div>
+    </section>
+  </header>
+
+  <main id="stage">
+    <div id="banner" class="note banner" role="status" hidden></div>
+    <section id="camPane" class="cam" aria-label="Camera">
+      <video id="video" playsinline muted disablepictureinpicture></video>
+      <canvas id="overlay"></canvas>
+      <div id="camIdle" class="camidle">Camera off — press Start</div>
+      <div class="camtools">
+        <span id="camInfo" class="caminfo" hidden></span>
+        <button type="button" id="fitBtn" class="fitbtn" hidden>Fill</button>
+      </div>
+      <div id="chips" class="chips" hidden></div>
+    </section>
+
+    <div id="grip" class="grip" role="separator" aria-orientation="horizontal" aria-label="Drag to resize the camera" tabindex="0"><span></span></div>
+
+    <section id="namesPane" class="names" aria-label="Runners">
+      <button type="button" id="newPill" class="newpill" hidden></button>
+      <div id="feed" class="feed" aria-live="polite">
+        <div class="empty">Waiting for bibs.<br>Press <b>Start</b> and point a camera at runners.</div>
+      </div>
+    </section>
+  </main>
+
+  <button type="button" id="goBtn" class="fab">Start</button>
+</div>
+
+<!-- ============================================================ History -->
+<section id="historyView" class="page" hidden aria-label="History">
+  <header>
+    <div><h1>Runners seen</h1><div class="sub" id="histSub">…</div></div>
+    <nav><a href="#/">Live</a><a href="#/history" class="on">History</a><a href="#/setup">Setup</a></nav>
+  </header>
+  <main>
+    <div class="panel">
+      <div class="row">
+        <input type="search" id="histFind" class="grow" placeholder="Filter by bib or name" aria-label="Filter by bib or name">
+        <button type="button" id="histCsv">Download CSV</button>
+        <button type="button" class="danger" id="histClear">Clear</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Look up a bib</h2>
+      <form id="lookupForm" class="row">
+        <input type="text" id="lookupBib" inputmode="numeric" autocomplete="off" placeholder="Bib number" aria-label="Bib number" class="narrow">
+        <button type="submit" class="primary">Look up</button>
+        <label class="check" id="askTimerRow"><input type="checkbox" id="askTimer"> Ask the timer for the latest result</label>
+      </form>
+      <div id="lookupOut"></div>
+    </div>
+    <div class="panel"><div id="histRows" class="muted">loading…</div></div>
+  </main>
+</section>
+
+<!-- ============================================================== Setup -->
+<section id="setupView" class="page" hidden aria-label="Setup">
+  <header>
+    <div><h1>Setup</h1><div class="sub" id="setupSub">races, settings and data</div></div>
+    <nav><a href="#/">Live</a><a href="#/history">History</a><a href="#/setup" class="on">Setup</a></nav>
+  </header>
+  <main>
+
+    <div class="panel">
+      <h2>Add a race</h2>
+      <form id="addForm" class="row">
+        <input type="text" id="spec" class="grow" autocomplete="off" placeholder="ChronoTrack or Athlinks results link, or an event id" aria-label="Race link or event id">
+        <button type="submit" class="primary" id="addBtn">Add</button>
+      </form>
+      <div class="muted gap">
+        Paste the results link from the race's own website. A bare number is treated as an
+        Athlinks event id; use <code>series:12345</code> for a recurring race. Adding a race
+        switches to it and pulls its roster straight away.
+      </div>
+      <div id="addMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>No internet? Bring your own roster</h2>
+      <div class="row">
+        <label class="btnfile" for="csvFile">Import roster CSV…</label>
+        <input type="file" id="csvFile" accept=".csv,text/csv,text/plain" class="visually-hidden">
+        <input type="text" id="csvName" class="grow" placeholder="Race name (optional)" aria-label="Race name for the imported roster">
+        <button type="button" id="demoBtn">Add the demo race</button>
+      </div>
+      <div class="muted gap">
+        A CSV needs a <b>bib</b> column and a <b>name</b> column (or first and last name). Also
+        understood: age, gender, city, state, country, team, race/course, time, place.
+        The demo race has 420 made-up runners and works with the demo camera.
+      </div>
+      <div id="csvMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Races</h2>
+      <div id="races" class="muted">loading…</div>
+      <div class="row gap">
+        <button type="button" id="syncBtn">Sync roster now</button>
+        <button type="button" id="syncEntBtn">Entrants only</button>
+        <span class="muted" id="syncMsg"></span>
+      </div>
+      <label class="check gap"><input type="checkbox" id="liveToggle"> Keep results fresh while this page is open</label>
+      <div class="muted" id="liveMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Scanner settings</h2>
+      <div id="settings" class="muted">loading…</div>
+      <div class="row gap">
+        <button type="button" class="primary" id="saveBtn">Save settings</button>
+        <button type="button" class="danger" id="resetBtn">Reset to defaults</button>
+        <span class="muted" id="setMsg"></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Recognition engine</h2>
+      <div id="engineStatus" class="kv"></div>
+      <div class="row gap">
+        <button type="button" id="engineRestart">Restart engine</button>
+      </div>
+      <h2 class="gap2">Accuracy self-test</h2>
+      <div class="muted">
+        Renders synthetic bibs from the active race's numbers, abuses them the way a finish line
+        does (angle, blur, noise, JPEG) and measures what the scanner makes of them. Scanning
+        stops while it runs.
+      </div>
+      <div class="row gap">
+        <label class="inline">Runners <select id="stCount"><option>10</option><option selected>25</option><option>50</option></select></label>
+        <label class="inline">Frames each <select id="stFrames"><option>3</option><option selected>5</option><option>8</option></select></label>
+        <label class="inline">Difficulty <select id="stDifficulty"><option>easy</option><option selected>mixed</option><option>hard</option></select></label>
+        <button type="button" class="primary" id="stRun">Run self-test</button>
+      </div>
+      <div id="stOut" class="gap"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Phone as the camera</h2>
+      <div id="netInfo" class="muted">checking…</div>
+    </div>
+
+    <div class="panel">
+      <h2>Your data</h2>
+      <div class="muted" id="storageInfo">Everything — races, runners, history, settings — is stored in this browser on this device.</div>
+      <div class="row gap">
+        <button type="button" id="exportBtn">Export backup</button>
+        <label class="btnfile" for="importFile">Import backup…</label>
+        <input type="file" id="importFile" accept=".json,application/json" class="visually-hidden">
+        <button type="button" class="danger" id="wipeBtn">Delete everything</button>
+      </div>
+      <div id="dataMsg"></div>
+    </div>
+
+    <div class="panel about muted">
+      bibscan-web · OCR by PP-OCR models (Apache-2.0) on ONNX Runtime Web (MIT). Race data comes
+      from Athlinks' public results endpoints, relayed by your own local server.
+    </div>
+  </main>
+</section>
+</body>
+</html>
