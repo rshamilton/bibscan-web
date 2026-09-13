@@ -25,29 +25,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { PROXY_HOSTS } from './relay_hosts.mjs';
+
+export { PROXY_HOSTS };
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PUBLIC_DIR = path.join(HERE, 'public');
 const DATA_DIR = path.join(HERE, 'data');
 const VERSION = JSON.parse(fs.readFileSync(path.join(HERE, 'package.json'), 'utf8')).version;
-
-const BROWSER_UA = 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-/* The only hosts the relay will talk to, and the headers each needs. The API
-   sits behind CloudFront, which blocks unknown user agents and origins, so
-   these are required rather than cosmetic. */
-export const PROXY_HOSTS = {
-  'reignite-api.athlinks.com': {
-    'User-Agent': BROWSER_UA,
-    Origin: 'https://www.athlinks.com',
-    Referer: 'https://www.athlinks.com/',
-    Accept: 'application/json',
-  },
-  'sites.chronotrack.com': {
-    'User-Agent': BROWSER_UA,
-    Accept: 'text/html,application/xhtml+xml',
-  },
-};
 
 const MAX_UPSTREAM_BYTES = 64 * 1024 * 1024;
 const UPSTREAM_TIMEOUT_MS = 30000;

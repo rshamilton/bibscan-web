@@ -19,6 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Point the page at the relay Worker
+        if: vars.RELAY_URL != ''
+        env:
+          RELAY_URL: ${{ vars.RELAY_URL }}
+        run: sed -i "s|<meta name=\"bibscan-relay\" content=\"\">|<meta name=\"bibscan-relay\" content=\"${RELAY_URL}\">|" public/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

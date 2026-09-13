@@ -1,0 +1,7 @@
+name = "bibscan-relay"
+main = "src/index.mjs"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Comma-separated page origins allowed to call the relay.
+ALLOWED_ORIGINS = "https://rshamilton.github.io,http://localhost:8780"

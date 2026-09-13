@@ -31,7 +31,9 @@ Object.assign(ctx, {
   persistent: true,
   storageError: null,
   info: null,
-  client: new ReigniteClient({ fetcher: proxyFetcher() }),
+  // Empty when served by server.mjs (same-origin /proxy/); the Pages deploy
+  // fills in the Cloudflare Worker's URL.
+  client: new ReigniteClient({ fetcher: proxyFetcher(document.querySelector('meta[name="bibscan-relay"]')?.content.replace(/\/+$/, '') || '') }),
   engine: new EngineClient(),
   cfg: build(),
   saved: {},

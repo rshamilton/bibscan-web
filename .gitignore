@@ -7,3 +7,4 @@ tests/ui/shots/
 *.key
 *.pem
 .env
+.wrangler/
